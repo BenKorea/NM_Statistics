@@ -81,7 +81,9 @@ filters:
   - shinylive
 ```
 
-::: {.callout-note title="7단계: 예제1 테스트" collapse="true" appearance="minimal"}
+::: {.callout-note title="9단계: 예제1 테스트" collapse="true" appearance="minimal"}
+-   Preview가 될 때가 있고 안될 때가 있습니다. 
+-   원인은 아직 모르겠지만, 시간이 경과하면 되는 것 같으므로 일단 진행합니다.
 :::
 
 ```{{shinylive-r}}
@@ -127,8 +129,11 @@ shinyApp(ui = ui, server = server)
 ```
 
 
-```{shinylive-r}
+::: {.callout-note title="10단계: API 테스트" collapse="true" appearance="minimal"}
+-   심평원에서 관리하고 있는 병원 목록을 호출하는 API를 테스트합니다.출
+:::
 
+```{{shinylive-r}}
 #| label: single API call
 #| echo: false
 
@@ -137,9 +142,8 @@ library(httr)
 library(plyr)
 
 download_api_data <- function() {
-  base_url <- "http://apis.data.go.kr/B551182/mdlrtActionInfoService"
-  call_url <- "getMdlrtActionByClassesStats"
-  method <- "GET"
+  base_url <- "http://apis.data.go.kr/B551182/hospInfoServicev2"
+  call_url <- "getHospBasisList"
   My_API_Key <- "DRwFWZ/jfi6551teJKgRhkKgC+XhcjobN+ccY2MQdF9yZdx8xL5Kn4IljljMCWGsl2ObEco/rm21r14CN7iG0g=="  # 실제 API 키
   params <- list(
     serviceKey = My_API_Key,
