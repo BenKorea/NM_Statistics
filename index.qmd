@@ -1,8 +1,133 @@
 ---
 title: "R-4.4.1-NM_Statistics"
+description:  "NM Statistics by API calls"
+author: "BenKorea"
+date: "2024-11-24"
+date-modified: "2024-11-24"
+categories:
+  - API
+  - Shinylive
+  - Nuclear Medicine
 ---
 
-```{r}
+-   Shinylive로 핵의학통계 웹페이지 구성하는 과정을 정리한 것입니다.
+
+::: {.callout-note title="1단계: `Quarto Website` 프로젝트 만들기" collapse="true" appearance="minimal"}
+-   RStudio/File 메뉴에서 `New Project...` 메뉴 선택
+-   `New Directory`에 생성되도록 선택
+-   Project type은 `Quarto Website`를 선택
+-   상위폴더가 `C:/Projects`인지 확인 (=Global Options 사전 지정값)
+-   [x] Create a git repository: 체크 유지하여 버전관리 적용
+-   [x] Use renv with this project: 체크 유지하여 패키지 독립관리 적용
+-   [x] Use visual markdown editor: 체크 유지하여 wizwig 에디터 사용
+-   [ ] Open in new session: 기존 프로젝트가 이미 열려있고, 같이 사용할려면 체크
+:::
+
+```{r project_name, eval=FALSE, filename="recommeded project name"}
+R-4.4.1-NM_Statistics_Example
+```
+
+::: {.callout-note title="2단계: 버전관리 제외대상 추가하기" collapse="true" appearance="minimal"}
+-   `.gitignore` 파일을 열어서 아래의 내용을 추가하여 git 버전관리에서 제외합니다.
+:::
+
+```{r gitignore_add, eval=FALSE, filename=".gitignore"}
+.Rprofile
+*.Rproj
+renv/
+```
+
+::: {.callout-note title="3단계: shiny 패키지 설치하기" collapse="true" appearance="minimal"}
+:::
+
+```{r install_shiny, eval=FALSE, filename="R Console"}
+renv::install("shiny")
+```
+
+::: {.callout-note title="4단계: development version shinylive 패키지 설치하기" collapse="true" appearance="minimal"}
+-   Development version은 loading 속도가 개선되었으므로 사용해벌 가치가 있습니다.
+-   pak 패키지를 먼저 설치합니다.
+-   pak 패키지를 이용해서 posit 사의 development version shinylive 패키지를 설치합니다.
+:::
+
+```{r install_pak, eval=FALSE, filename="R console"}
+renv::install("pak")
+```
+
+```{r install_dev_shinylive, eval=FALSE, filename="R console"}
+pak::pak("posit-dev/r-shinylive")
+```
+
+::: {.callout-note title="6단계: shinylive extension 설치하기" collapse="true" appearance="minimal"}
+:::
+
+```{r install_shinylive_extension, eval=FALSE, filename="R Terminal"}
+quarto add quarto-ext/shinylive
+```
+
+
+::: {.callout-note title="7단계: output-dir 설정하기" collapse="true" appearance="minimal"}
+:::
+
+```{r output_dir, eval=FALSE, filename="_quarto.yml"}
+  output-dir: docs
+```
+
+::: {.callout-note title="8단계: filter 설정하기" collapse="true" appearance="minimal"}
+:::
+
+```{r filter, eval=FALSE, filename="_quarto.yml"}
+filters:
+  - shinylive
+```
+
+::: {.callout-note title="7단계: 예제1 테스트" collapse="true" appearance="minimal"}
+:::
+
+```{{shinylive-r}}
+#| label: histogram_example
+#| standalone: true
+#| viewerHeight: 500
+
+
+library(shiny)
+
+ui <- fluidPage(
+  titlePanel("Hello Shiny!"),
+  sidebarLayout(
+    sidebarPanel(
+      sliderInput(
+        inputId = "bins",
+        label = "Number of bins:",
+        min = 1,
+        max = 50,
+        value = 30
+      )
+    ),
+    mainPanel(
+      plotOutput(outputId = "distPlot")
+    )
+  )
+)
+
+server <- function(input, output) {
+  output$distPlot <- renderPlot({
+    x <- faithful$waiting
+    bins <- seq(min(x), max(x), length.out = input$bins + 1)
+    hist(x,
+         breaks = bins, col = "#75AADB", border = "white",
+         xlab = "Waiting time to next eruption (in mins)",
+         main = "Histogram of waiting times"
+    )
+  })
+}
+
+shinyApp(ui = ui, server = server)
+
+```
+
+
+```{shinylive-r}
 
 #| label: single API call
 #| echo: false
