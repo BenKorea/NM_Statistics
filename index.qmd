@@ -65,7 +65,6 @@ pak::pak("posit-dev/r-shinylive")
 quarto add quarto-ext/shinylive
 ```
 
-
 ::: {.callout-note title="7단계: output-dir 설정하기" collapse="true" appearance="minimal"}
 :::
 
@@ -81,8 +80,8 @@ filters:
   - shinylive
 ```
 
-::: {.callout-note title="9단계: 예제1 테스트" collapse="true" appearance="minimal"}
--   Preview가 될 때가 있고 안될 때가 있습니다. 
+::: {.callout-note title="9단계: shinylive 테스트" collapse="true" appearance="minimal"}
+-   Preview가 될 때가 있고 안될 때가 있습니다.
 -   원인은 아직 모르겠지만, 시간이 경과하면 되는 것 같으므로 일단 진행합니다.
 :::
 
@@ -128,14 +127,27 @@ shinyApp(ui = ui, server = server)
 
 ```
 
-
 ::: {.callout-note title="10단계: API 테스트" collapse="true" appearance="minimal"}
--   심평원에서 관리하고 있는 병원 목록을 호출하는 API를 테스트합니다.출
+-   심평원에서 관리하고 있는 병원 목록을 호출하는 API를 테스트합니다.
+
+```{r install_rjson, eval=FALSE, filename="R console"}
+renv::install("rjson")
+```
+
+```{r install_httr, eval=FALSE, filename="R console"}
+renv::install("httr")
+```
+
+```{r install_plyr, eval=FALSE, filename="R console"}
+renv::install("plyr")
+```
+
+-   테스트결과 parameters에 pageNo와 numOfRows를 지정하지 않으면 각각 1과 10으로 반환됩니다. 따라서 pageNo를 증가시키면서 오류가 발생할 때까지 호출하는 알고리즘으로 수정이 필요합니다.
+
 :::
 
-```{{shinylive-r}}
+```{{r}}
 #| label: single API call
-#| echo: false
 
 library(rjson)
 library(httr)
@@ -146,13 +158,7 @@ download_api_data <- function() {
   call_url <- "getHospBasisList"
   My_API_Key <- "DRwFWZ/jfi6551teJKgRhkKgC+XhcjobN+ccY2MQdF9yZdx8xL5Kn4IljljMCWGsl2ObEco/rm21r14CN7iG0g=="  # 실제 API 키
   params <- list(
-    serviceKey = My_API_Key,
-    pageNo = 1,
-    numOfRows = 10,
-    resultType = "json",
-    year = "2023",
-    stdType = "1",
-    st5Cd = "HK010"
+    serviceKey = My_API_Key
   )
   
   # API 호출
@@ -172,5 +178,66 @@ download_api_data <- function() {
 data <- download_api_data()
 data_list<-data$response$body$items$item
 df <- rbind.fill(lapply(data_list, as.data.frame))
+print(df)
 
 ```
+::: {.callout-note title="11단계: PageNo 반복호출하기" collapse="true" appearance="minimal"}
+
+-   테스트결과 parameters에 pageNo와 numOfRows를 지정하지 않으면 각각 1과 10으로 반환됩니다. 따라서 pageNo를 증가시키면서 오류가 발생할 때까지 호출하는 알고리즘으로 수정이 필요합니다.
+
+:::
+
+```{{r}}
+#| label: all_pageNo_call
+
+library(rjson)
+library(httr)
+library(plyr)
+
+
+download_api_data <- function(page_No) {
+  base_url <- "http://apis.data.go.kr/B551182/hospInfoServicev2"
+  call_url <- "getHospBasisList"
+  My_API_Key <- "DRwFWZ/jfi6551teJKgRhkKgC+XhcjobN+ccY2MQdF9yZdx8xL5Kn4IljljMCWGsl2ObEco/rm21r14CN7iG0g=="  # 실제 API 키
+  params <- list(
+    serviceKey = My_API_Key,
+    pageNo = page_No
+  )
+  
+  # API 호출
+  url <- paste0(base_url, "/", call_url)
+  response <- GET(url, query = params)
+
+  if (status_code(response) == 200) {
+    json_text <- content(response, as = "text", encoding = "UTF-8")
+    data <- fromJSON(json_text)
+    return(data)
+  } else {
+    print(paste("API 호출 실패:", status_code(response)))
+    return(NULL)
+  }
+}
+
+data_list_all <- list()
+data_frame <- data.frame()
+page_No <- 0
+while (TRUE) {
+  page_No <- page_No + 1
+  data <- download_api_data(page_No)
+  
+  if (is.null(data) || is.null(data$response$body$items$item)) {
+    message("데이터가 더 이상 없습니다. 마지막 페이지: ", page_No)
+    break
+  }
+  
+  data_list<-data$response$body$items$item
+  data_list_all[[page_No]] <- lapply(data_list, as.data.frame)  # 데이터를 리스트로 저장
+  print(page_No)
+}
+
+data_frame <- rbind.fill(do.call(c, data_list_all))
+
+```
+
+-     위 코드의 문제는 호출한도를 초과한다는 것이다. 일일 트래픽이 10000건으로 제한되어 있기 때문이다.
+
